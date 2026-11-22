@@ -255,7 +255,7 @@ function narrateFallback(rawContext = {}) {
     const lines = (byId.get(id).lines && byId.get(id).lines[band]) || [];
     if (!lines.length || seen.has(id)) continue;
     seen.add(id);
-    messages.push({ citizenId: id, text: truncate(lines[0], 140) });
+    messages.push({ citizenId: id, text: withCitizenSimFact(lines[0], byId.get(id), context.simSummary || context.summary || {}) });
     if (messages.length === 6) break;
   }
   if (!messages.length) {
@@ -268,6 +268,27 @@ function narrateFallback(rawContext = {}) {
   const finale = Array.isArray(context.enacted) && context.enacted.length > 0;
   const base = String(bandLine || option.loomLine || (finale ? FINALE_LOOM_LINES[band] : BAND_LOOM_LINES[band])).trim();
   return { loomLine: withSimFacts(base, context.simSummary || context.summary), messages, band, fallback: true };
+}
+
+/** Add the strongest matching simulation fact to an authored citizen line. */
+function withCitizenSimFact(text, citizen, summary = {}) {
+  const moves = Array.isArray(summary.topMoves) ? summary.topMoves : [];
+  const matches = moves
+    .filter((move) => move && move.trait && (move.district === citizen.district || move.cohort === citizen.cohort))
+    .sort((a, b) => {
+      const score = (m) => (m.district === citizen.district && m.cohort === citizen.cohort ? 2 : 1);
+      return score(b) - score(a) || Math.abs(Number(b.change) || 0) - Math.abs(Number(a.change) || 0);
+    });
+  const move = matches[0];
+  if (!move) return truncate(text, 140);
+  const trait = String(move.trait).replace(/([A-Z])/g, ' $1').trim();
+  const district = DISTRICT_NAMES[move.district] || move.district;
+  const direction = Number(move.change) > 0 ? 'rose' : Number(move.change) < 0 ? 'fell' : 'shifted';
+  const fact = `${trait[0].toUpperCase()}${trait.slice(1)} ${direction} in ${district}.`;
+  const prefix = String(text == null ? '' : text).trim();
+  const room = Math.max(0, 140 - fact.length - (prefix ? 1 : 0));
+  const authored = truncate(prefix, room).trimEnd();
+  return `${authored}${authored ? ' ' : ''}${fact}`;
 }
 
 /**

@@ -153,6 +153,27 @@ test('offline narration names the most affected district and the realized shock'
   assert.equal(loom.withSimFacts('y'.repeat(199), summary), 'y'.repeat(199));
 });
 
+test('offline narration carries the changing district and trait into citizen messages across all five cycles', async () => {
+  const traits = ['purpose', 'connection', 'health', 'trust', 'fairness'];
+  const districtNames = {
+    D1: 'Aurelia', D2: 'Capitol', D3: 'Obsidian-Chasm',
+    D4: 'Sector V Commons', D5: 'Twilight Promenade'
+  };
+  for (let cycle = 0; cycle < 5; cycle++) {
+    const target = citizens[cycle];
+    const trait = traits[cycle];
+    const summary = {
+      realizedDelta: cycle % 2 ? -4 : 4,
+      topMoves: [{ district: target.district, cohort: target.cohort, trait, change: cycle % 2 ? -0.12 : 0.12 }]
+    };
+    const out = await loom.narrate({ winningOption: { name: `Cycle ${cycle + 1}` }, simSummary: summary, citizens }, { config: OFFLINE });
+    const message = out.messages.find((item) => item.citizenId === target.id);
+    assert.ok(message, `cycle ${cycle + 1} includes an affected citizen`);
+    assert.match(message.text, new RegExp(`${trait} (?:rose|fell) in ${districtNames[target.district]}`, 'i'), `cycle ${cycle + 1} explains the leading trait and district`);
+    assert.ok(message.text.length <= 140, `cycle ${cycle + 1} stays within the phone-feed limit`);
+  }
+});
+
 test('narrate sends each citizen\'s simulated mood and top trait change to Gemini', async () => {
   let prompt = '';
   const fetchImpl = async (url, init) => {
