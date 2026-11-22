@@ -348,7 +348,12 @@ test('loom.moderate embeds few-shot calibration: authored policies with exact ef
   // ...then Fixed Crisis 1's options from data/crises.json as anchors.
   const data = require('../../data/crises.json');
   const fixed1 = data.crises.find((c) => c.world === 'fixed' && c.cycle === 1);
-  assert.deepEqual(examples[2].effects, loom.cleanEffects(fixed1.options.A.effects));
+  const expectedAnchors = ['A', 'B'].map((key) => ({
+    policy: String(fixed1.options[key].text || fixed1.options[key].name).trim().slice(0, 160),
+    roles: loom.cleanRoles(fixed1.options[key].roles),
+    effects: loom.cleanEffects(fixed1.options[key].effects)
+  }));
+  assert.deepEqual(examples.slice(2), expectedAnchors, 'both fixed-crisis anchors stay synced to current authored text, roles and tuned effects');
   assert.equal(examples.length, 4);
   // The submissions come last, after the calibration block.
   assert.ok(prompt.indexOf('Calibration examples') < prompt.indexOf(FIVE[0].text));
