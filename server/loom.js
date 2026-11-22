@@ -601,9 +601,13 @@ async function moderate(submissions = [], crisis = {}, opts = {}) {
   const list = (submissions || [])
     .map((s) => ({ node: safeNode(s.node), text: truncate(redactNames(s.text, names), 280) }))
     .filter((s) => s.node);
+  const locallyFiltered = new Map(list
+    .map((s) => [s.node, prefilterSubmission(s, opts)])
+    .filter(([, result]) => result));
+  const safeList = list.filter((s) => !locallyFiltered.has(s.node));
   const baseCfg = opts.config || getConfig();
   const cfg = baseCfg.moderateTimeoutMs ? { ...baseCfg, timeoutMs: baseCfg.moderateTimeoutMs } : baseCfg;
-  if (!cfg.enabled || !list.length) return moderateFallback(list);
+  if (!cfg.enabled || !safeList.length) return list.map((s) => locallyFiltered.get(s.node) || moderateFallback([s])[0]);
   try {
     const examples = calibrationExamples(crisis);
     const prompt = [
@@ -614,11 +618,12 @@ async function moderate(submissions = [], crisis = {}, opts = {}) {
       ] : []),
       ...(opts.revision ? ['These are revised second attempts after your private feedback. Use status "ok" if the policy is now acceptable, otherwise "reject". Never "revise" again.'] : []),
       'Moderate and translate each council submission. Return one object per submission, same node ids, as a JSON array.',
-      JSON.stringify(list)
+      JSON.stringify(safeList)
     ].join('\n\n');
     const result = await callGemini(prompt, { ...opts, config: cfg, schema: MODERATION_SCHEMA, temperature: 0.2, label: opts.revision ? 'moderateOne' : 'moderate' });
     if (!Array.isArray(result)) throw new Error('moderation: not an array');
     return list.map((s) => {
+      if (locallyFiltered.has(s.node)) return locallyFiltered.get(s.node);
       const r = result.find((x) => x && x.node === s.node);
       if (!r) return moderateFallback([s])[0];
       const clean = sanitizeModerationResult(r);
@@ -628,7 +633,7 @@ async function moderate(submissions = [], crisis = {}, opts = {}) {
     });
   } catch (err) {
     console.warn(`[loom] moderate fell back: ${err.message}`);
-    return moderateFallback(list);
+    return list.map((s) => locallyFiltered.get(s.node) || moderateFallback([s])[0]);
   }
 }
 
@@ -639,6 +644,25 @@ async function moderate(submissions = [], crisis = {}, opts = {}) {
 // ---------------------------------------------------------------------------
 
 const HEURISTIC_BANNED = /\b(damn|hell|crap|sh[i1]t\w*|f+u+c+k\w*|bitch\w*|bastard|ass(hole)?|piss\w*|sex\w*|porn\w*|kill\w*|murder\w*|suicide|die|dead|gun\w*|bomb\w*|nazi\w*|stupid|idiot\w*|dumb|retard\w*|loser|ugly|fat|hate)\b/i;
+
+/** Reject inappropriate first attempts locally, before any Gemini request. */
+function prefilterSubmission(submission = {}, opts = {}) {
+  const text = String(submission.text || '');
+  if (!HEURISTIC_BANNED.test(text)) return null;
+  return {
+    node: submission.node,
+    status: opts.revision ? 'reject' : 'revise',
+    cleaned: '',
+    feedback: opts.revision
+      ? 'This revision still contains language that is not appropriate for the classroom.'
+      : 'Please rewrite this as a school-appropriate policy without profanity or personal attacks.',
+    roles: [],
+    effects: zeroEffects(),
+    fallback: true,
+    heuristic: true
+  };
+}
+
 const HEURISTIC_ROLE_WORDS = {
   artisan: /\b(craft\w*|guild\w*|build\w*|repair\w*|hand\w*|skill\w*|workshop\w*|art|arts|artist\w*|make|making|maker\w*|teach\w*|learn\w*|apprentic\w*|garden\w*|cook\w*)\b/i,
   lotus: /\b(comfort\w*|luxur\w*|dividend\w*|stipend\w*|pleasure\w*|fun|relax\w*|happ\w*|leisure|holiday\w*|vacation\w*|entertain\w*|free|rest)\b/i,

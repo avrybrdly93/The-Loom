@@ -393,6 +393,26 @@ test('loom.moderateOne marks the call as a revision: ok or reject only, a second
   assert.equal(ok.effects.purpose, 0.3);
 });
 
+test('moderate locally flags profanity and slurs before Gemini, including when the API is offline', async () => {
+  let calls = 0;
+  const fetchImpl = async () => { calls++; throw new Error('Gemini should not receive filtered text'); };
+  const firstAttempt = await loom.moderate([{ node: 'NODE-01', text: 'This is stupid.' }], FINALE_CRISIS, { config: ONLINE, fetchImpl });
+  assert.equal(calls, 0, 'unsafe text is filtered before contacting Gemini');
+  assert.equal(firstAttempt[0].status, 'revise');
+  assert.equal(firstAttempt[0].cleaned, '');
+  assert.match(firstAttempt[0].feedback, /school-appropriate/);
+
+  const offline = await loom.moderate([{ node: 'NODE-02', text: 'That was a damn bad policy.' }], FINALE_CRISIS, { config: OFFLINE, fetchImpl });
+  assert.equal(calls, 0);
+  assert.equal(offline[0].status, 'revise');
+  assert.equal(offline[0].fallback, true);
+
+  const revision = await loom.moderateOne({ node: 'NODE-03', text: 'This is still shit.' }, FINALE_CRISIS, { config: ONLINE, fetchImpl });
+  assert.equal(calls, 0);
+  assert.equal(revision.status, 'reject');
+  assert.equal(revision.cleaned, '');
+});
+
 test('loom.moderate runs every Gemini result through sanitizeModerationResult (emoji, lengths, roles, traits)', async () => {
   const messy = (list) => list.map((s) => ({ node: s.node, status: 'ok', cleaned: `Free \u{1F355} pizza ${'for all '.repeat(40)}`, feedback: '', roles: ['catalyst', 'ghost', 'artisan', 'lotus'], effects: { purpose: 3, trust: -2, health: 'lots' } }));
   const out = await loom.moderate(FIVE, FINALE_CRISIS, { config: ONLINE, fetchImpl: recordingFetch((body) => messy(JSON.parse(body.contents[0].parts[0].text.split('\n\n').pop()))).fetchImpl });
