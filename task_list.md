@@ -837,7 +837,7 @@ Because the four domains have asymmetric complexity, tasks are distributed unequ
 - [x] **TASK-751:** Verify that the Stretch Goal interface boundary in `server/sim/index.js` (`simulate(state, effects, options) -> { forecast, realized, finalState, summary }`) is cleanly documented so the 5,000-citizen small-world agent model can be swapped in after Thursday without changing `server/gameEngine.js`.
 - [x] **TASK-752:** Run full unit test suite across `server/sim/prng.js`, `server/sim/state.js`, `server/sim/step.js`, `server/sim/index.js`, and `server/loom.js`.
 - [ ] **TASK-753:** Trigger Thursday Final Automated Branch Merger (`feature/backend`, `feature/frontend`, `feature/content`, `feature/sim` -> `main`).
-- [ ] **TASK-754:** Run full post-merge syntax and dependency check on `main`.
+- [x] **TASK-754:** Run full post-merge syntax and dependency check on `main`.
 - [ ] **TASK-755:** Execute Full End-to-End Integration Test #1: World `AA` (The Commonwealth) with live Gemini API.
 - [ ] **TASK-756:** Execute Full End-to-End Integration Test #2: World `AB` (The Benevolent Machine) with live Gemini API.
 - [ ] **TASK-757:** Execute Full End-to-End Integration Test #3: World `BA` (The Uneasy Republic) with live Gemini API.
