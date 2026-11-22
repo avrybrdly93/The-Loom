@@ -35,7 +35,7 @@ test('loom.narrate returns valid fallback JSON when the API key is missing', asy
   assert.equal(out.fallback, true);
 });
 
-test('loom.moderate returns valid fallback JSON when the API key is missing', async () => {
+test('loom.moderate never returns unreviewed input as cleaned fallback text when the API key is missing', async () => {
   const submissions = [
     { node: 'NODE-01', text: '  Every district elects a repair council.  ' },
     { node: 'NODE-02', text: 'x'.repeat(400) },
@@ -48,14 +48,15 @@ test('loom.moderate returns valid fallback JSON when the API key is missing', as
   parsed.forEach((r, i) => {
     assert.equal(r.node, submissions[i].node);
     assert.ok(['ok', 'revise', 'reject'].includes(r.status));
-    assert.ok(typeof r.cleaned === 'string' && r.cleaned.length > 0 && r.cleaned.length <= 140);
+    assert.equal(r.cleaned, '');
+    assert.equal(r.status, 'reject');
     assert.equal(typeof r.feedback, 'string');
     assert.ok(Array.isArray(r.roles));
     assert.deepEqual(Object.keys(r.effects).sort(), [...TRAITS].sort());
     for (const t of TRAITS) assert.ok(r.effects[t] >= -1 && r.effects[t] <= 1);
     assert.equal(r.fallback, true);
   });
-  assert.equal(parsed[0].cleaned, 'Every district elects a repair council.');
+  assert.doesNotMatch(JSON.stringify(parsed), /Every district elects a repair council/);
 });
 
 test('loom never mutates the game state or scores it is given', async () => {
@@ -423,6 +424,23 @@ test('loom.moderate runs every Gemini result through sanitizeModerationResult (e
   }
 });
 
+test('moderation network errors never echo raw student text in cleaned', async () => {
+  const raw = 'A secret, unreviewed classroom proposal.';
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    const out = await loom.moderate([{ node: 'NODE-04', text: raw }], FINALE_CRISIS, {
+      config: ONLINE,
+      fetchImpl: async () => { throw new Error('network unavailable'); }
+    });
+    assert.equal(out[0].status, 'reject');
+    assert.equal(out[0].cleaned, '');
+    assert.ok(!JSON.stringify(out).includes(raw));
+  } finally {
+    console.warn = warn;
+  }
+});
+
 test('loom.getPlaceholderPolicy(node): the standard protocol text, no roles, zero effects', () => {
   const p = loom.getPlaceholderPolicy('NODE-03');
   assert.equal(p.node, 'NODE-03');
@@ -546,7 +564,8 @@ test('loom.moderate falls back cleanly after the 8,000 ms timeout, and the engin
   }
   assert.equal(aborted, true, 'request aborted at 8 s');
   assert.equal(out.length, 5, 'resolves (never rejects), one result per write-in');
-  assert.ok(out.every((r) => r.fallback === true && r.status === 'ok' && r.roles.length === 0));
+  assert.ok(out.every((r) => r.fallback === true && r.status === 'reject' && r.cleaned === '' && r.roles.length === 0));
+  assert.ok(out.every((r) => !JSON.stringify(r).includes(FIVE.find((s) => s.node === r.node).text)), 'timeout fallback never exposes raw write-ins');
   assert.ok(out.every((r) => Object.values(r.effects).every((v) => v === 0)), 'zero effects: never scored');
   // The engine reads an all-fallback batch as "Gemini unavailable" and plays the authored A/B.
   t.mock.timers.reset();

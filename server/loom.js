@@ -572,16 +572,15 @@ function calibrationExamples(crisis = {}) {
 }
 
 /**
- * Offline fallback: every policy passes as written (trimmed to 140 chars)
- * with no role tags and a zero effect vector. Flagged `fallback: true` so the
- * engine can switch to the authored A/B finale instead.
+ * Offline fallback: never expose an unreviewed write-in as an accepted policy.
+ * Flagged `fallback: true` so the engine can switch to the authored A/B finale.
  */
 function moderateFallback(submissions) {
   return submissions.map((s) => ({
     node: s.node,
-    status: 'ok',
-    cleaned: truncate(s.text, 140),
-    feedback: '',
+    status: 'reject',
+    cleaned: '',
+    feedback: 'Unable to safely review this proposal; a standard protocol policy will be used.',
     roles: [],
     effects: zeroEffects(),
     fallback: true
