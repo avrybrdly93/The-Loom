@@ -832,7 +832,7 @@ Because the four domains have asymmetric complexity, tasks are distributed unequ
 - [x] **TASK-746:** Verify Gemini safety settings in `server/loom.js` block harassment, hate speech, sexually explicit content, and dangerous content at the API layer in addition to the moderation system prompt.
 - [x] **TASK-747:** Add a fast local profanity/slur pre-filter in `server/loom.js` so blatantly inappropriate classroom submissions are immediately flagged as `status: "revise"` or `"reject"` even if Gemini is slow or offline.
 - [x] **TASK-748:** Ensure raw unmoderated student text is NEVER returned in `cleaned` under any error or timeout scenario in `server/loom.js`.
-- [ ] **TASK-749:** Verify `loom.moderate` few-shot calibration examples in `server/loom.js` stay automatically synced with the final tuned effect vectors in `data/crises.json`.
+- [x] **TASK-749:** Verify `loom.moderate` few-shot calibration examples in `server/loom.js` stay automatically synced with the final tuned effect vectors in `data/crises.json`.
 - [x] **TASK-750:** Test `simulate()` performance on low-power laptop CPU settings (confirming 501 runs stay well under `50 ms`).
 - [ ] **TASK-751:** Verify that the Stretch Goal interface boundary in `server/sim/index.js` (`simulate(state, effects, options) -> { forecast, realized, finalState, summary }`) is cleanly documented so the 5,000-citizen small-world agent model can be swapped in after Thursday without changing `server/gameEngine.js`.
 - [ ] **TASK-752:** Run full unit test suite across `server/sim/prng.js`, `server/sim/state.js`, `server/sim/step.js`, `server/sim/index.js`, and `server/loom.js`.
