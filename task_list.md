@@ -834,7 +834,7 @@ Because the four domains have asymmetric complexity, tasks are distributed unequ
 - [x] **TASK-748:** Ensure raw unmoderated student text is NEVER returned in `cleaned` under any error or timeout scenario in `server/loom.js`.
 - [x] **TASK-749:** Verify `loom.moderate` few-shot calibration examples in `server/loom.js` stay automatically synced with the final tuned effect vectors in `data/crises.json`.
 - [x] **TASK-750:** Test `simulate()` performance on low-power laptop CPU settings (confirming 501 runs stay well under `50 ms`).
-- [ ] **TASK-751:** Verify that the Stretch Goal interface boundary in `server/sim/index.js` (`simulate(state, effects, options) -> { forecast, realized, finalState, summary }`) is cleanly documented so the 5,000-citizen small-world agent model can be swapped in after Thursday without changing `server/gameEngine.js`.
+- [x] **TASK-751:** Verify that the Stretch Goal interface boundary in `server/sim/index.js` (`simulate(state, effects, options) -> { forecast, realized, finalState, summary }`) is cleanly documented so the 5,000-citizen small-world agent model can be swapped in after Thursday without changing `server/gameEngine.js`.
 - [ ] **TASK-752:** Run full unit test suite across `server/sim/prng.js`, `server/sim/state.js`, `server/sim/step.js`, `server/sim/index.js`, and `server/loom.js`.
 - [ ] **TASK-753:** Trigger Thursday Final Automated Branch Merger (`feature/backend`, `feature/frontend`, `feature/content`, `feature/sim` -> `main`).
 - [ ] **TASK-754:** Run full post-merge syntax and dependency check on `main`.
