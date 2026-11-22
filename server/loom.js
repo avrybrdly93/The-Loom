@@ -20,6 +20,12 @@
 
 const DEFAULT_MODEL = 'gemini-2.5-flash'; // Flash-class; override with GEMINI_MODEL (e.g. gemini-2.0-flash)
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const SAFETY_SETTINGS = [
+  'HARM_CATEGORY_HARASSMENT',
+  'HARM_CATEGORY_HATE_SPEECH',
+  'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+  'HARM_CATEGORY_DANGEROUS_CONTENT'
+].map((category) => ({ category, threshold: 'BLOCK_LOW_AND_ABOVE' }));
 
 function getConfig(env = process.env) {
   const apiKey = (env.GEMINI_API_KEY || '').trim();
@@ -128,6 +134,7 @@ async function callGeminiOnce(userPrompt, opts, cfg, meta) {
   const body = {
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+    safetySettings: SAFETY_SETTINGS,
     generationConfig: {
       temperature: typeof opts.temperature === 'number' ? opts.temperature : 0.2,
       maxOutputTokens: opts.maxOutputTokens || 1024,

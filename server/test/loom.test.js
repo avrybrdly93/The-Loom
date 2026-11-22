@@ -97,6 +97,22 @@ test('loom never mutates the game state or scores it is given', async () => {
   }
 });
 
+test('every Gemini request sets API-level blocks for classroom safety categories', async () => {
+  let request;
+  const fetchImpl = async (url, init) => {
+    request = JSON.parse(init.body);
+    return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ ok: true, line: 'I am online.' }) }] } }] }) };
+  };
+  const out = await loom.testConnection({ config: ONLINE, fetchImpl });
+  assert.equal(out.ok, true);
+  assert.deepEqual(request.safetySettings, [
+    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_LOW_AND_ABOVE' },
+    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_LOW_AND_ABOVE' },
+    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_LOW_AND_ABOVE' },
+    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_LOW_AND_ABOVE' }
+  ]);
+});
+
 test('narrateFallback prefers the option\'s authored loomLines for the outcome band', () => {
   const option = { name: 'X', loomLine: 'single line', loomLines: { good: 'good line', mixed: 'mixed line', bad: 'bad line' } };
   assert.equal(loom.narrateFallback({ winningOption: option, simSummary: { realizedDelta: 8 } }).loomLine, 'good line');
