@@ -320,17 +320,22 @@ function packageLines(enacted = []) {
 
 /**
  * Order citizens by how much their (district, cohort) moved this cycle, using
- * the summary's topMoves (district/cohort matches first, then district-only).
+ * the summary's topMoves and shocks (district/cohort matches first, then
+ * district-only).
  * Returns [{ id, district, cohort, shift }] with the most affected first.
  */
 function rankCitizensByShift(citizens = [], summary = {}) {
   const moves = Array.isArray(summary.topMoves) ? summary.topMoves : [];
+  const shocks = Array.isArray(summary.shocks) ? summary.shocks : [];
   const scored = citizens.map((c, order) => {
     let shift = 0;
     for (const m of moves) {
       const change = Math.abs(Number(m.change) || 0);
       if (m.district === c.district && m.cohort === c.cohort) shift += change * 2;
       else if (m.district === c.district || m.cohort === c.cohort) shift += change * 0.5;
+    }
+    for (const shock of shocks) {
+      if (shock && shock.district === c.district) shift += Math.abs(Number(shock.amount) || 0.01) * 2;
     }
     return { id: c.id, district: c.district, cohort: c.cohort, shift, order };
   });

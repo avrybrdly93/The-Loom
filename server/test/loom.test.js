@@ -124,6 +124,19 @@ test('rankCitizensByShift puts citizens of the most-moved district and cohort fi
   assert.equal(ranked[1].id, 'kai', 'D2 youth');
 });
 
+test('offline narration puts citizens from top-move and shock districts ahead of unaffected districts', async () => {
+  const summary = {
+    realizedDelta: -4,
+    topMoves: [{ district: 'D4', cohort: 'elders', trait: 'trust', change: -0.2 }],
+    shocks: [{ month: 5, district: 'D2', trait: 'health', amount: 0.05 }]
+  };
+  const out = await loom.narrate({ winningOption: { name: 'P' }, simSummary: summary, citizens }, { config: OFFLINE });
+  const affected = out.messages.slice(0, 3).map((message) => message.citizenId);
+  assert.ok(affected.includes('ruth'), 'the D4 elder in topMoves is prioritized');
+  assert.ok(affected.includes('kai') || affected.includes('ezra'), 'a citizen from the D2 shock district is prioritized');
+  assert.ok(affected.every((id) => ['ruth', 'tomas', 'kai', 'ezra'].includes(id)), 'the first messages come from affected districts');
+});
+
 test('narrate prompt names the most affected citizens and asks for 6-10 in character', async () => {
   let prompt = '';
   const fetchImpl = async (url, init) => {
