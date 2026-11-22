@@ -8,6 +8,16 @@ const simConfig = require('../../../data/sim.json');
 
 const EFFECTS = { purpose: 0.3, connection: -0.2, health: 0.1, trust: -0.4, fairness: 0.5, autonomy: 0.2 };
 
+test('simulate preserves the documented engine-facing input and output boundary', () => {
+  const modelState = createInitialState(simConfig);
+  const result = simulate({ gdw: 25, simState: modelState }, EFFECTS, { runs: 1, seed: 42 });
+  assert.deepEqual(Object.keys(result).sort(), ['finalState', 'forecast', 'realized', 'summary']);
+  for (const key of ['runs', 'median', 'p5', 'p95', 'pCollapse', 'pUnrest']) assert.ok(key in result.forecast, `forecast.${key}`);
+  for (const key of ['seed', 'gdw', 'finalGdw', 'collapsed', 'districts', 'needs', 'shocks']) assert.ok(key in result.realized, `realized.${key}`);
+  for (const key of ['startGdw', 'realizedDelta', 'medianDelta', 'pCollapse', 'pUnrest', 'topMoves', 'shocks']) assert.ok(key in result.summary, `summary.${key}`);
+  assert.ok(result.finalState, 'the engine can store this opaque value for the next cycle');
+});
+
 test('500 forecast runs + 1 realized run execute in < 50 ms', async () => {
   const state = createInitialState(simConfig);
   simulate(state, EFFECTS, { runs: 500, seed: 1 }); // warm up the JIT and topology cache

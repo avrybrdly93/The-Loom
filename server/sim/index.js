@@ -76,14 +76,29 @@ function topMoves(before, after, count = 3) {
 }
 
 /**
- * Run the cycle: `runs` forecast runs (each with its own seed and redrawn
- * uncertain parameters) plus one realized run with the base parameters.
+ * Stable engine-facing simulation boundary. A replacement model may change
+ * its population size or internal state, but keep this call and result shape
+ * so `server/gameEngine.js` can keep treating `simState` as opaque.
  *
- * @param {object} state sim state (or { simState }), from createInitialState
- * @param {Effects} effects
+ * Inputs:
+ * - `state`: the model state, or the engine adapter `{ gdw, simState }` where
+ *   `simState` is the value returned by `createInitialState(config)`.
+ * - `effects`: a trait-to-number map (missing traits mean zero).
+ * - `opts`: `runs` (forecast count, default 500), `seed` (32-bit deterministic
+ *   seed), `volatility` (noise/shock multiplier), and optional `config`/`mode`.
+ *
+ * Result contract:
+ * - `forecast`: `{ runs, median, p5, p95, pCollapse, pUnrest }`.
+ * - `realized`: `{ seed, gdw, finalGdw, collapsed, districts, needs, shocks }`.
+ *   `gdw` is the monthly trajectory; `finalGdw` is the closing score.
+ * - `finalState`: next-cycle model state, stored and passed back as `simState`.
+ * - `summary`: `{ startGdw, realizedDelta, medianDelta, pCollapse, pUnrest,
+ *   topMoves, shocks }`, consumed by narration and the public resolution.
+ *
+ * @param {object} state model state or `{ gdw, simState }` engine adapter
+ * @param {Effects} effects trait effects for the enacted policy
  * @param {{ runs?: number, seed?: number, volatility?: number, config?: object, mode?: 'stub' }} [opts]
- *   runs defaults to constants.forecastRuns (500); volatility multiplies noise and shock odds.
- * @returns {SimResult}
+ * @returns {{ forecast: object, realized: object, finalState: object|null, summary: object }}
  */
 function simulate(state, effects, opts = {}) {
   // Stub mode, or a caller that has no sim state or config yet (the engine
