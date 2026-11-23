@@ -122,7 +122,13 @@ async function headlessOfflineRun(world) {
   for (const r of out.resolutions) {
     assert.ok(Number.isFinite(r.gdw), 'every resolution reports a GDW');
     assert.ok(r.loomLine && r.loomLine.length > 0, 'offline Loom narration on every cycle');
+    assert.ok(Array.isArray(r.messages) && r.messages.length > 0, 'offline authored citizen reactions appear on every cycle');
+    assert.ok(r.messages.every((m) => m.citizenId && m.text), 'citizen fallback messages stay attributable and non-empty');
   }
+  assert.equal(out.game.finaleFallback, true, 'offline moderation selects the authored A/B finale');
+  assert.equal(out.gameEnd.finaleMode, 'fallback');
+  assert.equal(out.gameEnd.finaleFallback, true);
+  assert.deepEqual(out.gameEnd.authors, [], 'unmoderated write-ins are not attributed or displayed');
   assert.equal(out.game.gdwHistory.length, 1 + 5 * 12, '60 monthly points plus the start');
   assert.ok(out.game.gdw > 0, `${world} survived to the end`);
   for (const node of NODE_IDS) assert.ok(Number.isInteger(out.game.scores[node]), `${node} has an integer score`);
