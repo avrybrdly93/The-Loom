@@ -842,7 +842,7 @@ Because the four domains have asymmetric complexity, tasks are distributed unequ
 - [ ] **TASK-756:** Execute Full End-to-End Integration Test #2: World `AB` (The Benevolent Machine) with live Gemini API.
 - [ ] **TASK-757:** Execute Full End-to-End Integration Test #3: World `BA` (The Uneasy Republic) with live Gemini API.
 - [ ] **TASK-758:** Execute Full End-to-End Integration Test #4: World `BB` (The Gilded Cage) with live Gemini API.
-- [ ] **TASK-759:** Execute Full End-to-End Offline Test #5: Unplug internet / disable `GEMINI_API_KEY` and play a complete 5-cycle game from Lobby to End Screen verifying all fallbacks (template citizen narration + authored A/B finale fallback).
+- [x] **TASK-759:** Execute Full End-to-End Offline Test #5: Unplug internet / disable `GEMINI_API_KEY` and play a complete 5-cycle game from Lobby to End Screen verifying all fallbacks (template citizen narration + authored A/B finale fallback).
 - [ ] **TASK-760:** Execute Full End-to-End Shutdown Test #6: Force negative trait effects until realized GDW hits `0%` in Cycle 3 and verify immediate transition to the Loom Shutdown ending screen.
 - [ ] **TASK-761:** Execute Full End-to-End Reconnect Test #7: Disconnect 2 phones mid-cycle, refresh Host browser during Debate, reconnect all clients, and verify seamless completion of the cycle.
 - [ ] **TASK-762:** Execute Full End-to-End Moderation Test #8: Submit 4 valid policies and 1 `"revise"` policy in Cycle 5, verify private feedback on the author's phone, resubmit a clean policy, rank via Borda count, and enact at `50/25/25`.
