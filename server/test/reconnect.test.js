@@ -224,6 +224,59 @@ test('a projector that refreshes mid-game rejoins its room and gets host:sync an
   assert.ok(got.phase.phase !== 'LOBBY');
 });
 
+test('two phones and a refreshed host reconnect during Debate and complete the cycle', { timeout: 30000 }, async () => {
+  const savedFastSeconds = process.env.FAST_TIMER_SECONDS;
+  process.env.FAST_TIMER_SECONDS = '2';
+  let room;
+  try { room = await startedRoom(); } finally {
+    if (savedFastSeconds === undefined) delete process.env.FAST_TIMER_SECONDS;
+    else process.env.FAST_TIMER_SECONDS = savedFastSeconds;
+  }
+  const { host, roomCode, phones, game } = room;
+  await until(() => game.cycle === 1 && game.phase === 'DEBATE', 10000);
+
+  const dropped = [phones[1], phones[3]];
+  for (const phone of dropped) phone.socket.close();
+  await until(() => dropped.every((phone) => game.players[phone.node].connected === false));
+
+  host.close();
+  const refreshedHost = connect({ clientType: 'host', roomCode });
+  const hostRoom = once(refreshedHost, 'host:room');
+  const hostSync = once(refreshedHost, 'host:sync');
+  const hostPhase = once(refreshedHost, 'phase');
+  const resolution = once(refreshedHost, 'resolution');
+  assert.equal((await hostRoom).roomCode, roomCode);
+  assert.equal((await hostSync).phase, 'DEBATE');
+  assert.equal((await hostPhase).phase, 'DEBATE');
+
+  const resumed = new Map();
+  for (const phone of dropped) {
+    const socket = connect({ clientType: 'phone', token: phone.token });
+    const events = {
+      resumed: once(socket, 'session:resumed'),
+      sync: once(socket, 'state:sync'),
+      role: once(socket, 'role:assigned'),
+      phase: once(socket, 'phase')
+    };
+    resumed.set(phone.node, { socket, events });
+  }
+  for (const [node, { events }] of resumed) {
+    assert.equal((await events.resumed).node, node);
+    assert.equal((await events.sync).node, node);
+    assert.ok((await events.role).role.key, 'the private role card is restored');
+    assert.equal((await events.phase).phase, 'DEBATE');
+  }
+
+  await until(() => game.cycle === 1 && game.phase === 'VOTE', 5000);
+  const voters = phones.map((phone) => resumed.get(phone.node)?.socket || phone.socket);
+  const votes = await Promise.all(voters.map((socket) => socket.emitWithAck('vote:cast', { choice: 'A' })));
+  assert.ok(votes.every((vote) => vote.ok), 'all five connected seats can vote');
+  const completed = await resolution;
+  assert.ok(completed.loomLine, 'the refreshed projector receives the cycle resolution');
+  await until(() => game.phase === 'WORLD_REVEAL' || game.cycle > 1, 5000);
+  assert.ok(phones.every((phone) => game.players[phone.node].connected), 'all five player seats remain connected');
+});
+
 // TASK-612 ------------------------------------------------------------------
 
 test('host:playAgain resets the room for the next class: new game id, LOBBY, seats released', { timeout: 15000 }, async () => {
