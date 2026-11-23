@@ -844,7 +844,7 @@ Because the four domains have asymmetric complexity, tasks are distributed unequ
 - [ ] **TASK-758:** Execute Full End-to-End Integration Test #4: World `BB` (The Gilded Cage) with live Gemini API.
 - [x] **TASK-759:** Execute Full End-to-End Offline Test #5: Unplug internet / disable `GEMINI_API_KEY` and play a complete 5-cycle game from Lobby to End Screen verifying all fallbacks (template citizen narration + authored A/B finale fallback).
 - [x] **TASK-760:** Execute Full End-to-End Shutdown Test #6: Force negative trait effects until realized GDW hits `0%` in Cycle 3 and verify immediate transition to the Loom Shutdown ending screen.
-- [ ] **TASK-761:** Execute Full End-to-End Reconnect Test #7: Disconnect 2 phones mid-cycle, refresh Host browser during Debate, reconnect all clients, and verify seamless completion of the cycle.
+- [x] **TASK-761:** Execute Full End-to-End Reconnect Test #7: Disconnect 2 phones mid-cycle, refresh Host browser during Debate, reconnect all clients, and verify seamless completion of the cycle.
 - [ ] **TASK-762:** Execute Full End-to-End Moderation Test #8: Submit 4 valid policies and 1 `"revise"` policy in Cycle 5, verify private feedback on the author's phone, resubmit a clean policy, rank via Borda count, and enact at `50/25/25`.
 - [ ] **TASK-763:** Execute Full End-to-End Rejection Test #9: Submit an unsafe policy twice in Cycle 5 and verify it is replaced by the safe placeholder policy and never shown raw on the projector.
 - [ ] **TASK-764:** Execute Full End-to-End Tie-Breaker Test #10: Spend an Override to force a 3–3 binary tie in Cycle 2 and verify The Loom breaks the tie using the higher forecast median GDW.
