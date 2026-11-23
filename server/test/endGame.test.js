@@ -365,17 +365,19 @@ test('closingMessage always has a citizen name, district and text, even offline 
 
 // TASK-648 ------------------------------------------------------------------
 
-/** Play a game whose Cycle 3 realized run collapses to GDW 0. */
+/** Play a game whose Cycle 3 uses severe negative effects and collapses to GDW 0. */
 async function collapseInCycle3(gameId) {
   const sim = require('../sim');
   const realSimulate = sim.simulate;
   let collapse = false;
-  sim.simulate = (...args) => {
-    const r = realSimulate(...args);
-    if (!collapse) return r;
-    const start = r.realized.gdw[0];
-    const gdw = Array.from(r.realized.gdw, (_, m) => Math.max(0, Math.round((start - (start / 6) * m) * 10) / 10));
-    return { ...r, realized: { ...r.realized, gdw, finalGdw: 0 } };
+  sim.simulate = (state, effects, options) => {
+    if (!collapse) return realSimulate(state, effects, options);
+    const forcedState = { ...state, simState: sim.cloneState(state.simState) };
+    forcedState.simState.traits.fill(0.4); // low, but nonzero, Cycle 3 starting wellbeing
+    const negativeEffects = Object.fromEntries(forcedState.simState.traitNames.map((trait) => [trait, -1]));
+    const result = realSimulate(forcedState, negativeEffects, { ...options, runs: 1 });
+    if (result.realized.finalGdw !== 0) throw new Error('severe negative Cycle 3 effects did not collapse the region');
+    return result;
   };
   try {
     return await playGame({
@@ -388,12 +390,14 @@ async function collapseInCycle3(gameId) {
   }
 }
 
-test('Shutdown Ending: the collapsed cycle\'s RESOLUTION goes straight to END and game:end', async () => {
+test('Shutdown Ending: severe negative Cycle 3 effects collapse the region and RESOLUTION goes straight to END', async () => {
   const out = await collapseInCycle3('shutdown-648');
   const after = out.phases.slice(out.phases.indexOf('3:RESOLUTION'));
   assert.deepEqual(after, ['3:RESOLUTION', '3:END'], 'no Cycle 4, no finale');
   assert.equal(out.resolutions.length, 3);
   assert.equal(out.resolutions[2].gdw, 0);
+  assert.equal(out.resolutions[2].realized.collapsed, true);
+  assert.ok(out.resolutions[2].realized.gdw.findIndex((gdw, month) => month > 0 && gdw === 0) > 0, 'the realized trajectory reaches zero during Cycle 3');
   const end = out.gameEnd;
   assert.equal(end.shutdown, true);
   assert.equal(end.grade, 'SHUTDOWN');
